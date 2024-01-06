@@ -57,7 +57,7 @@ function Get-SnooData {
 	}
 	$Response = Invoke-RestMethod @RequestParams
 	if ($AsJson) {
-		$Response | ConvertTo-Json
+		$Response | ConvertTo-Json -Depth 100
 	} else {
 		$Response
 	}
@@ -95,5 +95,5 @@ function Get-SnooSessionsDaily {
 		'detailedLevels' = 'true'
 		'startTime' = (Get-Date $StartTime -Format 'O')
 	}
-	Get-SnooData -EndPoint ('ss/v2/babies/' + (Get-SnooBaby)."_id" + '/sessions/aggregated/daily') -Query $Query
+	Get-SnooData -EndPoint ('ss/v2/babies/' + (Get-SnooBaby)."_id" + '/sessions/aggregated/daily') -Query $Query -AsJson:$AsJson
 }
