@@ -13,9 +13,9 @@ function Set-SnooToken {
 }
 
 function Request-SnooToken {
+	param([Switch]$Save)
 	# Switch -Save automatically calls Set-SnooToken after
 	# or returns it for you to store and manage manually
-	param([Switch]$Save)
 	$RequestParams = @{
 		UserAgent = 'SNOO/351 CFNetwork/1121.2 Darwin/19.2.0'
 		Method = 'POST'
@@ -43,7 +43,7 @@ function Request-SnooToken {
 
 function Get-SnooData {
 	[CmdletBinding()]
-	param([SecureString]$Token, [Uri]$Endpoint, [Switch]$AsJson, $Query)
+	param($Query, [SecureString]$Token, [Uri]$Endpoint, [Switch]$AsJson)
 	if (!$Token) {
 		$Token = (Request-SnooToken | ConvertTo-SecureString -AsPlainText)
 	}
@@ -67,22 +67,16 @@ function Get-SnooData {
 	}
 }
 
-function Get-SnooDevice {
-	[CmdletBinding()]
-	param([Switch]$AsJson)
-	Get-SnooData -Endpoint 'me/devices' -AsJson:$AsJson
-}
-
 function Get-SnooAccount {
 	[CmdletBinding()]
 	param([Switch]$AsJson)
 	Get-SnooData -Endpoint 'us/me' -AsJson:$AsJson
 }
 
-function Get-SnooBaby {
+function Get-SnooDevice {
 	[CmdletBinding()]
 	param([Switch]$AsJson)
-	Get-SnooData -Endpoint 'us/v3/me/baby' -AsJson:$AsJson
+	Get-SnooData -Endpoint 'me/devices' -AsJson:$AsJson
 }
 
 function Get-SnooDeviceConfig {
@@ -91,9 +85,28 @@ function Get-SnooDeviceConfig {
 	Get-SnooData -Endpoint ('ds/devices/' + (Get-SnooDevice).serialNumber  + '/configs') -AsJson:$AsJson
 }
 
-function Get-SnooSessionsDaily {
+function Get-SnooBaby {
 	[CmdletBinding()]
-	param([Switch]$AsJson, $Start)
+	param([Switch]$Save, [Switch]$AsJson)
+	$Response = Get-SnooData -Endpoint 'us/v3/me/baby' -AsJson:$AsJson
+	if ($Save -and $Response."_id") {
+		$PSDefaultParameterValues["Get-SnooSessions:BabyId"] = $Response."_id"
+	}
+	$Response
+}
+
+function Get-SnooSessions {
+	[CmdletBinding()]
+	param($Start, [String]$BabyId, [Switch]$Weekly, [Switch]$AsJson)
+	# Defaults to daily unless -Weekly is specified
+	if ($Weekly -eq $true) {
+		$TimePeriod = 'avg'
+	} else {
+		$TimePeriod = 'daily'
+	}
+	if (!$BabyId) {
+		$BabyId = (Get-SnooBaby)."_id"
+	}
 	$Query = @{
 		'levels' = 'true'
 		'detailedLevels' = 'true'
@@ -101,5 +114,5 @@ function Get-SnooSessionsDaily {
 		# No timezone conversion -- assumes you are requesting from the same timezone the SNOO was used in
 		# It would be a good idea to specify the same start time (e.g. 10:00) that you have set as the 'SNOO Log Start Time' in the app
 	}
-	Get-SnooData -EndPoint ('ss/v2/babies/' + (Get-SnooBaby)."_id" + '/sessions/aggregated/daily') -Query $Query -AsJson:$AsJson
+	Get-SnooData -EndPoint ('ss/v2/babies/' + $BabyId + '/sessions/aggregated/' + $TimePeriod) -Query $Query -AsJson:$AsJson
 }

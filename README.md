@@ -16,7 +16,9 @@ Usage
 	* `Get-SnooDevice` 
 	* `Get-SnooDeviceConfig`
 	* `Get-SnooBaby`
-	* `Get-SnooSessions -Daily`
-	* `Get-SnooSessions -Weekly`
+		* Use `-Save` to store the baby ID via `$PSDefaultParameters` to speed up subsequent session requests
+	* `Get-SnooSessions`
+		* Gets daily stats with all level details by default
+		* Use `-Weekly` to get aggregated stats
 	* `Get-SnooData -Endpoint <PATH>` for other endpoints
 	* PowerShell objects are returned, or you can request `-AsJson`
