@@ -1,4 +1,4 @@
-# PowerShell interface for SNOO data APIs
+# PowerShell client for SNOO data API
 # Author: Stephen Mok <me@stephen.is>
 
 # This tool is not affiliated with or endorsed by Happiest Baby
