@@ -5,12 +5,16 @@
 # SNOO is a "smart bassinet" for babies: https://www.happiestbaby.com/products/snoo-smart-bassinet
 
 function Set-SnooToken {
+	# Save into $PSDefaultParameterValues for the session
+	# which will then be used for each Get-SnooData call
 	[CmdletBinding()]
 	param([Parameter(Mandatory=$true)] [SecureString] $Token)
-	$PSDefaultParameterValues["*-Snoo*:Token"] = $Token
+	$PSDefaultParameterValues["Get-SnooData:Token"] = $Token
 }
 
 function Request-SnooToken {
+	# Switch -Save automatically calls Set-SnooToken after
+	# or returns it for you to store and manage manually
 	param([Switch]$Save)
 	$RequestParams = @{
 		UserAgent = 'SNOO/351 CFNetwork/1121.2 Darwin/19.2.0'
@@ -22,7 +26,7 @@ function Request-SnooToken {
 		SessionVariable = 'Session'
 		Uri = 'https://snoo-api.happiestbaby.com/us/login'
 	}
-	$RequestCredentials = Get-Credential -Title 'Log in with your Happiest Baby account to access the SNOO API'
+	$RequestCredentials = Get-Credential -Title 'Access the Snoo API with your Happiest Baby account'
 	$RequestCredentialsJson = @{
 		'username' = $RequestCredentials.UserName
 		'password' = ($RequestCredentials.Password | ConvertFrom-SecureString -AsPlainText)
@@ -89,11 +93,13 @@ function Get-SnooDeviceConfig {
 
 function Get-SnooSessionsDaily {
 	[CmdletBinding()]
-	param([Switch]$AsJson, $StartTime)
+	param([Switch]$AsJson, $Start)
 	$Query = @{
 		'levels' = 'true'
 		'detailedLevels' = 'true'
-		'startTime' = (Get-Date $StartTime -Format 'O')
+		'startTime' = (Get-Date $Start -Format 'O')
+		# No timezone conversion -- assumes you are requesting from the same timezone the SNOO was used in
+		# It would be a good idea to specify the same start time (e.g. 10:00) that you have set as the 'SNOO Log Start Time' in the app
 	}
 	Get-SnooData -EndPoint ('ss/v2/babies/' + (Get-SnooBaby)."_id" + '/sessions/aggregated/daily') -Query $Query -AsJson:$AsJson
 }
