@@ -18,8 +18,9 @@ Usage
 	* `Get-SnooStatus`
 	* `Get-SnooBaby`
 		* Use `-Save` to store the baby ID via `$PSDefaultParameters` to speed up subsequent session requests
-	* `Get-SnooSessions`
+	* `Get-SnooSessions <DATETIME>`
 		* Gets daily stats with all level details by default
 		* Use `-Weekly` or `-Monthly` to get aggregated stats
+		* Recommendation: use the same start time as your 'SNOO Log Start Time' preference in the SNOO app, e.g. `Get-SnooSessions '2024-01-01 10:00'` (assumes you are requesting data from the same timezone as your SNOO)
 	* `Get-SnooData -Endpoint <PATH>` for other endpoints
-	* PowerShell objects are returned, or you can request `-AsJson`
+	* PowerShell objects are returned for each request, or you can specify `-AsJson`
