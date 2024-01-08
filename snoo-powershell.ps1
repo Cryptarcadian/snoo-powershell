@@ -31,6 +31,7 @@ function Request-SnooToken {
 		'username' = $RequestCredentials.UserName
 		'password' = ($RequestCredentials.Password | ConvertFrom-SecureString -AsPlainText)
 	} | ConvertTo-Json
+	Write-Verbose ("Requesting data from " + $RequestParams.Uri)
 	$Response = Invoke-RestMethod @RequestParams -Body $RequestCredentialsJson
 	if ($Response -and $Response.access_token) {
 		if ($Save) {
@@ -43,22 +44,24 @@ function Request-SnooToken {
 
 function Get-SnooData {
 	[CmdletBinding()]
-	param($Query, [SecureString]$Token, [Uri]$Endpoint, [Switch]$AsJson)
+	param([Parameter(Mandatory=$true)] [Uri]$Endpoint, $Query, [Parameter(Mandatory=$true)] [SecureString]$Token, [Switch]$AsJson)
 	if (!$Token) {
 		$Token = (Request-SnooToken | ConvertTo-SecureString -AsPlainText)
-	}
-	if (!$Endpoint) {
-		$Endpoint = 'analytics/sessions/last'
 	}
 	$RequestParams = @{
 		UserAgent = 'SNOO/351 CFNetwork/1121.2 Darwin/19.2.0'
 		Method = 'GET'
+		Headers = @{
+			'Accept' = 'application/json'
+			'Content-Type' = 'application/json;charset=UTF-8'
+		}
 		Authentication = 'Bearer'
 		SessionVariable = 'Session'
 		Token = $Token
 		Uri = 'https://snoo-api.happiestbaby.com/' + $Endpoint
 		Body = $Query
 	}
+	Write-Verbose ("Requesting data from " + $RequestParams.Uri)
 	$Response = Invoke-RestMethod @RequestParams
 	if ($AsJson) {
 		$Response | ConvertTo-Json -Depth 100
@@ -85,6 +88,12 @@ function Get-SnooDeviceConfig {
 	Get-SnooData -Endpoint ('ds/devices/' + (Get-SnooDevice).serialNumber  + '/configs') -AsJson:$AsJson
 }
 
+function Get-SnooStatus {
+	[CmdletBinding()]
+	param([Switch]$AsJson)
+	Get-SnooData -Endpoint 'analytics/sessions/last' -AsJson:$AsJson
+}
+
 function Get-SnooBaby {
 	[CmdletBinding()]
 	param([Switch]$Save, [Switch]$AsJson)
@@ -97,22 +106,33 @@ function Get-SnooBaby {
 
 function Get-SnooSessions {
 	[CmdletBinding()]
-	param($Start, [String]$BabyId, [Switch]$Weekly, [Switch]$AsJson)
-	# Defaults to daily unless -Weekly is specified
-	if ($Weekly -eq $true) {
-		$TimePeriod = 'avg'
-	} else {
-		$TimePeriod = 'daily'
-	}
-	if (!$BabyId) {
-		$BabyId = (Get-SnooBaby)."_id"
-	}
+	param([Parameter(Mandatory=$true)]$Start, [String]$BabyId, [Switch]$Weekly, [Switch]$Monthly, [Switch]$AsJson)
+	# Defaults to daily unless -Weekly or -Monthly is specified
 	$Query = @{
-		'levels' = 'true'
-		'detailedLevels' = 'true'
 		'startTime' = (Get-Date $Start -Format 'O')
 		# No timezone conversion -- assumes you are requesting from the same timezone the SNOO was used in
 		# It would be a good idea to specify the same start time (e.g. 10:00) that you have set as the 'SNOO Log Start Time' in the app
 	}
-	Get-SnooData -EndPoint ('ss/v2/babies/' + $BabyId + '/sessions/aggregated/' + $TimePeriod) -Query $Query -AsJson:$AsJson
+	if (!$BabyId) {
+		$BabyId = (Get-SnooBaby)."_id"
+	}
+	$EndPoint = 'ss/v2/babies/' + $BabyId + '/sessions/aggregated/'
+	if ($Weekly) {
+		$Endpoint += 'avg'
+		$Query['interval'] = 'week'
+		$Description = "weekly"
+	} elseif ($Monthly) {
+		$Endpoint += 'avg'
+		$Query['interval'] = 'month'
+		$Description = "monthly"
+	} else {
+		$Endpoint += 'daily'
+		$Description = "daily"
+		$Query += @{
+			'levels' = 'true'
+			'detailedLevels' = 'true'
+		}
+	}
+	Write-Verbose ("Requesting $Description data with start time " + $Query['startTime'])
+	Get-SnooData -EndPoint $Endpoint -Query $Query -AsJson:$AsJson
 }
