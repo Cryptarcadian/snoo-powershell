@@ -1,9 +1,9 @@
 snoo-powershell
 ===============
-
+ 
 A PowerShell client/wrapper for the (read-only) data API of the [SNOO Smart Bassinet](https://www.happiestbaby.com/products/snoo-smart-bassinet) for babies.
 
-The aim is to retrieve the complete raw data provided by the API for archiving or further use.
+The aim is to retrieve the complete raw data provided by the API for archiving or further use. Requires the cross-platform PowerShell 7 or newer (formerly Windows PowerShell).
 
 This tool is not affiliated with or endorsed by Happiest Baby.
 
